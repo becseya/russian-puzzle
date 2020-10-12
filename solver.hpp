@@ -28,6 +28,8 @@ class Solver : public ShapeSet
     FloodFiller flooder;
     frame_limit_t frameLimit;
     FastVector<frame_limit_t> frameLimits;
+    bool firstIsFixed;
+    int firstX, firstY;
 
 public:
     Solver(shapes_t& shapes, ShapeMap& canvas, ProgressNotifier& notifier)
@@ -37,11 +39,21 @@ public:
         , info({.attempts = 0, .fits = 0, .solutions = 0, .iterations = 0})
         , flooder(canvas.getWidth(), canvas.getHeight())
         , frameLimit({.minX = 0, .minY = 0, .maxX = (canvas.getWidth()-1), .maxY = (canvas.getHeight()-1)})
+        , firstIsFixed(false)
     {}
 
-    void solve() {
+    void solve(bool fixed = false) {
+        firstIsFixed = fixed;
+
         fitNextRecursive();
         notify(E_FINISHED);
+    }
+
+    void solve(int first_x, int first_y) {
+        firstX = first_x;
+        firstY = first_y;
+
+        solve(true);
     }
 
 private:
@@ -77,7 +89,7 @@ private:
         return false;
     }
 
-    fit_result_t tryToFit(bool refit = false) {
+    fit_result_t tryToFit(bool refit = false, bool first_fit = false) {
         bool fitted;
         shape_desc_t desc;
 
@@ -85,8 +97,16 @@ private:
             desc = undrawLast();
         else {
             desc.var = 0;
-            desc.x = frameLimit.minX;
-            desc.y = frameLimit.minY;
+
+            if (first_fit) {
+                desc.x = firstX;
+                desc.y = firstY;
+            }
+            else {
+                desc.x = frameLimit.minX;
+                desc.y = frameLimit.minY;
+            }
+
             static_cast<frame_limit_t&>(desc) = frameLimit;
         }
 
@@ -96,6 +116,10 @@ private:
 
             if (fitted) {
                 refit = !fieldsAreOk();
+
+                if (refit && first_fit)
+                    return FAIL;
+
                 notify(E_PLACED);
 
                 if (refit)
@@ -117,7 +141,7 @@ private:
         fit_result_t res;
 
         do {
-            res = tryToFit(refit);
+            res = tryToFit(refit, (firstIsFixed && (lvl == 0)));
 
             if (res == FIT)
                 res = fitNextRecursive(lvl+1);
@@ -128,6 +152,9 @@ private:
                 return CONTINUE;
             }
             else
+                return res;
+
+            if (firstIsFixed && (lvl == 0))
                 return res;
 
             refit = true;
