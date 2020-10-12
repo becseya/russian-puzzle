@@ -61,41 +61,60 @@ void print_bitmap(const Bitmap& bitmap) {
     printf("--------------------------------\n");
 }
 
+struct notifer_settings_t {
+    int width, height;
+    bool printSolutions = false;
+    bool printPlacements = false;
+    bool printBenchmark = true;
+    bool printFinish = true;
+};
+
 class MyNotifier : public ProgressNotifier {
     ShapeMap canvas;
+
     time_t last_timestamp;
     time_t started;
+    const notifer_settings_t& settings;
 
 public:
-    MyNotifier(const ShapeMap& canvas)
-        : canvas(canvas)
+    MyNotifier(const notifer_settings_t& settings)
+        : canvas(settings.width, settings.height)
         , last_timestamp(time(NULL))
         , started(last_timestamp)
+        , settings(settings)
     {}
 
-    virtual void handleProgress(solving_event_t e, const ShapeSet& set, solving_info_t info) final {
+    virtual void handleProgress(solving_event_t e, const ShapeSet& set, solving_info_t info) override {
         time_t now = time(NULL);
 
-        if (now > last_timestamp) {
-            float sol = (float)info.solutions/(now-started);
-            float speed = (float)info.iterations/1000000/(now-started);
-
-            printf("%4lu sol %5.1f sol/s - %5.1f Ma (%2.0f%%) %5.1f Mi/s %5.1f sol/Mi\n"
-                , info.solutions
-                , sol
-                , (float)info.attempts/1000000
-                , (float)info.fits/info.attempts*100
-                , speed
-                , sol/speed
-            );
-            //solution.draw(canvas);
-            //print_bitmap(canvas);
+        if (settings.printBenchmark && (now > last_timestamp)) {
+            printBenchmark(info, (now-started));
             last_timestamp = now;
+        }
+
+        if (settings.printPlacements || (settings.printSolutions && (e == E_SOLUTION))) {
+            set.draw(canvas);
+            print_bitmap(canvas);
+        }
+
+        if (settings.printFinish && (e == E_FINISHED)) {
+            time_t now = time(NULL);
+            printf("Finished!\n\n");
+            printf("Found %5ld solutions in %lu seconds\n", info.solutions, now-started);
         }
     }
 
-    //time_t now = time(NULL);
-    //printf("Finished!\n\n");
-    //printf("Found %5ld solutions in %lu seconds\n", info.solutions, now-started);
-};
+    static void printBenchmark(const solving_info_t& info, size_t dt) {
+        float sol = (float)info.solutions/dt;
+        float speed = (float)info.iterations/1000000/dt;
 
+        printf("%5lu sol %4.0f sol/s - %4lu Ma (%2.0f%%) %3.0f Mi/s %5.1f sol/Mi\n"
+            , info.solutions
+            , sol
+            , info.attempts/1000000
+            , (float)info.fits/info.attempts*100
+            , speed
+            , sol/speed
+        );
+    }
+};
