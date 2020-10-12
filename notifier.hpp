@@ -62,13 +62,13 @@ void print_bitmap(const Bitmap& bitmap) {
 }
 
 class MyNotifier : public ProgressNotifier {
-    ShapeMap myCanvas;
+    ShapeMap canvas;
     time_t last_timestamp;
     time_t started;
 
 public:
     MyNotifier(const ShapeMap& canvas)
-        : myCanvas(canvas)
+        : canvas(canvas)
         , last_timestamp(time(NULL))
         , started(last_timestamp)
     {}
@@ -79,7 +79,8 @@ public:
         if (now > last_timestamp) {
             float sol = (float)info.solutions/(now-started);
             float speed = (float)info.iterations/1000000/(now-started);
-            printf("%4lu sol %5.1f sol/s - %5.1f Ma (%2.0f%%) %3.1f Mi/s %.2f sol/Mi\n"
+
+            printf("%4lu sol %5.1f sol/s - %5.1f Ma (%2.0f%%) %5.1f Mi/s %5.1f sol/Mi\n"
                 , info.solutions
                 , sol
                 , (float)info.attempts/1000000
@@ -87,8 +88,8 @@ public:
                 , speed
                 , sol/speed
             );
-            //solution.draw(myCanvas);
-            //print_bitmap(myCanvas);
+            //solution.draw(canvas);
+            //print_bitmap(canvas);
             last_timestamp = now;
         }
     }
