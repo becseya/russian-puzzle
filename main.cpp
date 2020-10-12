@@ -84,18 +84,14 @@ class MyNotifier : public ProgressNotifier {
 public:
     MyNotifier(const ShapeMap& canvas)
         : myCanvas(canvas)
-        , last_timestamp(0)
-        , started(0)
+        , last_timestamp(time(NULL))
+        , started(last_timestamp)
     {}
 
-    virtual void handlePlacedShape(const ShapeSet& solution, solving_info_t info) override{
+    virtual void handleProgress(solving_event_t e, const ShapeSet& set, solving_info_t info) final {
         time_t now = time(NULL);
 
-        if (started == 0) {
-            started = now;
-            last_timestamp = now;
-        }
-        else if (now > last_timestamp) {
+        if (now > last_timestamp) {
             float sol = (float)info.solutions/(now-started);
             float speed = (float)info.iterations/1000000/(now-started);
             printf("%4lu sol %5.1f sol/s - %5.1f Ma (%2.0f%%) %3.1f Mi/s %.2f sol/Mi\n"
@@ -112,16 +108,9 @@ public:
         }
     }
 
-    virtual void handleSolution(const ShapeSet& solution, solving_info_t info) override{
-        //solution.draw(myCanvas);
-        //print_bitmap(myCanvas);
-    }
-
-    virtual void handleFinish(solving_info_t info) override{
-        time_t now = time(NULL);
-        printf("Finished!\n\n");
-        printf("Found %5ld solutions in %lu seconds\n", info.solutions, now-started);
-    }
+    //time_t now = time(NULL);
+    //printf("Finished!\n\n");
+    //printf("Found %5ld solutions in %lu seconds\n", info.solutions, now-started);
 };
 
 

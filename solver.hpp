@@ -10,12 +10,11 @@ struct solving_info_t {
     size_t iterations;
 };
 
-struct ProgressNotifier {
-    virtual void handlePlacedShape(const ShapeSet& solution, solving_info_t info) {}
-    virtual void handleSolution(const ShapeSet& solution, solving_info_t info) {}
-    virtual void handleFinish(solving_info_t info) {}
-};
+enum solving_event_t {E_PLACED, E_SOLUTION, E_FINISHED};
 
+struct ProgressNotifier {
+    virtual void handleProgress(solving_event_t e, const ShapeSet& set, solving_info_t info) = 0;
+};
 
 
 class Solver : public ShapeSet
@@ -42,7 +41,7 @@ public:
 
     void solve() {
         fitNextRecursive();
-        notifier.handleFinish(info);
+        notify(E_FINISHED);
     }
 
 private:
@@ -97,7 +96,7 @@ private:
 
             if (fitted) {
                 refit = !fieldsAreOk();
-                notifier.handlePlacedShape(*this, info);
+                notify(E_PLACED);
 
                 if (refit)
                     undrawLast(false);
@@ -124,7 +123,7 @@ private:
                 res = fitNextRecursive(lvl+1);
             else if (res == SOLUTION) {
                 info.solutions++;
-                notifier.handleSolution(*this, info);
+                notify(E_SOLUTION);
                 undrawLast();
                 return CONTINUE;
             }
@@ -190,5 +189,9 @@ private:
 
         while (isRowFilled(frameLimit.maxX))
             frameLimit.maxX--;
+    }
+
+    void notify(solving_event_t e) {
+        notifier.handleProgress(e, *this, info);
     }
 };
