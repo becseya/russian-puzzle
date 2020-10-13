@@ -27,7 +27,7 @@ int main() {
     settings.height = MAP_HEIGHT;
 
     // objects
-    ConstFastVector<Shape> shapes(shapes_arr, SHAPE_NUM);
+    const FastVector<Shape> shapes(shapes_arr, SHAPE_NUM);
     ShapeMap canvas(MAP_WIDTH, MAP_HEIGHT);
     MyNotifier notifier(settings);
     Solver solver(shapes, canvas, notifier);
