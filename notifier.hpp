@@ -118,3 +118,121 @@ public:
         );
     }
 };
+
+#ifdef MULTI_PROC
+
+struct NotifyerMutex {
+    virtual void lock() = 0;
+    virtual void unlock() = 0;
+};
+
+class MyMultiprocessNotifier : public ProgressNotifier {
+    const notifer_settings_t& settings;
+    NotifyerMutex& mtx;
+    solving_info_t myInfo;
+    time_t myLastTimestamp;
+
+
+    static FastVector<MyMultiprocessNotifier*> children;
+    static time_t lastTimestamp;
+    static time_t started;
+    static solving_info_t totalInfo;
+
+
+public:
+    MyMultiprocessNotifier(const notifer_settings_t& settings, NotifyerMutex& mtx)
+        : settings(settings)
+        , mtx(mtx)
+        , myInfo({0})
+        , myLastTimestamp(time(NULL))
+    {
+        lock();
+        born(this);
+        unlock();
+    }
+
+    ~MyMultiprocessNotifier() {
+        lock();
+        die(this);
+        unlock();
+    }
+
+    void lock() {
+        mtx.lock();
+    }
+
+    void unlock() {
+        mtx.unlock();
+    }
+
+    virtual void handleProgress(solving_event_t e, const ShapeSet& set, solving_info_t info) override {
+        if (e == E_FINISHED) {
+            lock();
+            myInfo = info;
+            unlock();
+        }
+        else if(settings.printBenchmark) {
+            time_t now = time(NULL);
+
+            if (now > myLastTimestamp) {
+
+                lock();
+                myInfo = info;
+                collectStat(now);
+                unlock();
+
+                myLastTimestamp = now;
+            }
+        }
+    }
+
+    static void collectStat(time_t now) {
+        if (lastTimestamp == now)
+            return; // has been updated by someone else
+
+        solving_info_t sum = totalInfo;
+        for(size_t i = 0; i<children.size(); i++)
+            addInfo(sum, children[i]->myInfo);
+
+        printf("%lu children:", children.size());
+        MyNotifier::printBenchmark(sum, now-started);
+        lastTimestamp = now;
+    }
+
+    static void born(MyMultiprocessNotifier* child) {
+        if (started == 0) {
+            started = time(NULL);
+            lastTimestamp = started;
+        }
+
+        children.push(child);
+    }
+
+    static void die(MyMultiprocessNotifier* child) {
+        addInfo(totalInfo, child->myInfo);
+
+        children.remove(child);
+        if (children.size() == 0)
+            finished();
+    }
+
+    static void finished() {
+        time_t now = time(NULL);
+        printf("Finished!\n\n");
+        printf("Found %5ld solutions in %lu seconds\n", totalInfo.solutions, now-started);
+    }
+
+    static void addInfo(solving_info_t& sum, const solving_info_t& addent) {
+        sum.attempts += addent.attempts;
+        sum.fits += addent.fits;
+        sum.iterations += addent.iterations;
+        sum.solutions += addent.solutions;
+    }
+};
+
+FastVector<MyMultiprocessNotifier*> MyMultiprocessNotifier::children;
+solving_info_t MyMultiprocessNotifier::totalInfo = {0};
+time_t MyMultiprocessNotifier::lastTimestamp = 0;
+time_t MyMultiprocessNotifier::started = 0;
+
+#endif
