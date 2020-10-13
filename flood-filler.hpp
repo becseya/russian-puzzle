@@ -5,11 +5,11 @@
 class FloodFiller : protected Bitmap {
     char fields;
     size_t filledArea;
-    static const char FIELD_MAX_NUM = 47;
+    static const char FIELD_MAX_NUM = ' ';
 
 public:
-    FloodFiller(int width, int height)
-        : Bitmap(width, height, '.', NULL)
+    FloodFiller(const Bitmap& model)
+        : Bitmap(model)
         , fields(0)
         , filledArea(0)
     {}
