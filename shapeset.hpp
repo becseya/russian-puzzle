@@ -10,7 +10,7 @@ struct shape_desc_t : public frame_limit_t {
     int y;
 };
 
-typedef ConstFastVector<Shape> shapes_t;
+typedef const FastVector<Shape> shapes_t;
 typedef FastVector<shape_desc_t> descriptors_t;
 
 struct ShapeSet {
