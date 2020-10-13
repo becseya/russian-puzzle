@@ -37,7 +37,7 @@ public:
         , canvas(canvas)
         , notifier(notifier)
         , info({.attempts = 0, .fits = 0, .solutions = 0, .iterations = 0})
-        , flooder(canvas.getWidth(), canvas.getHeight())
+        , flooder(canvas)
         , frameLimit({.minX = 0, .minY = 0, .maxX = (canvas.getWidth()-1), .maxY = (canvas.getHeight()-1)})
         , firstIsFixed(false)
     {}
@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    bool tryToFitShape(const Shape& shape_to_fit, shape_desc_t& desc, bool skip_first = false) {
+    bool tryToFitShape(const Shape& shape_to_fit, shape_desc_t& desc, bool skip_first, bool first_fit) {
         const size_t max_var = shape_to_fit.getNumOfVariants();
 
         if (skip_first)
@@ -80,6 +80,8 @@ private:
                         descriptors.push(desc);
                         return true;
                     }
+                    else if(first_fit)
+                        return false;
                 }
                 desc.x = frameLimit.minX;
             }
@@ -112,7 +114,7 @@ private:
 
         do {
             info.attempts++;
-            fitted = tryToFitShape(shapes[descriptors.size()], desc, refit);
+            fitted = tryToFitShape(shapes[descriptors.size()], desc, refit, first_fit);
 
             if (fitted) {
                 refit = !fieldsAreOk();

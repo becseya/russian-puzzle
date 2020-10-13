@@ -4,9 +4,12 @@
 #include <omp.h>
 #endif
 
-constexpr int MAP_WIDTH = 10;
-constexpr int MAP_HEIGHT = 6;
+constexpr int MAP_WIDTH = 8;
+constexpr int MAP_HEIGHT = 8;
 constexpr size_t SHAPE_NUM = 12;
+
+notifer_settings_t settings;
+ShapeMap map(MAP_WIDTH, MAP_HEIGHT);
 
 const Shape shapes_arr[SHAPE_NUM]{
     (Bitmap) {3, 3, 'X', (const char[]) {0, 1, 0, 1, 1, 1, 0, 1, 0}},
@@ -23,18 +26,32 @@ const Shape shapes_arr[SHAPE_NUM]{
     (Bitmap) {5, 1, 'I', (const char[]) {1, 1, 1, 1, 1}},
 };
 
-notifer_settings_t settings;
+const Bitmap obstacle({2, 2, '!', (const char[]) {1, 1, 1, 1}});
+
+
+static void init() {
+    // parameters
+    settings.width = MAP_WIDTH;
+    settings.height = MAP_HEIGHT;
+    //settings.printSolutions = true;
+
+    // draw obstacle
+    map.set(3, 3, '!');
+    map.set(3, 4, '!');
+    map.set(4, 3, '!');
+    map.set(4, 4, '!');
+}
+
 
 #ifndef MULTI_PROC
 
 int main() {
-    // parameters
-    settings.width = MAP_WIDTH;
-    settings.height = MAP_HEIGHT;
+
+    init();
 
     // objects
     const FastVector<Shape> shapes(shapes_arr, SHAPE_NUM);
-    ShapeMap canvas(MAP_WIDTH, MAP_HEIGHT);
+    ShapeMap canvas(map);
     MyNotifier notifier(settings);
     Solver solver(shapes, canvas, notifier);
 
@@ -54,21 +71,20 @@ public:
 };
 
 int main() {
-    // parameters
-    settings.width = MAP_WIDTH;
-    settings.height = MAP_HEIGHT;
+
+    init();
 
     // objects
     const FastVector<Shape> shapes(shapes_arr, SHAPE_NUM);
     OmpMutex mutex;
 
     #pragma omp parallel for
-    for(int i = 0; i < 8*4; i++) {
-        ShapeMap canvas(MAP_WIDTH, MAP_HEIGHT);
+    for(int i = 0; i < 6*6; i++) {
+        ShapeMap canvas(map);
         MyMultiprocessNotifier notifier(settings, mutex);
 
         Solver solver(shapes, canvas, notifier);
-        solver.solve(i%8, i/8);
+        solver.solve(i%6, i/6);
     }
 }
 
