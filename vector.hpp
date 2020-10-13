@@ -56,6 +56,10 @@ public:
         return itemsR[idx];
     }
 
+    const T& last() const {
+        return itemsR[itemNum-1];
+    }
+
     void push(const T& item) {
         if (allocated < itemNum + 1)
             reallocate();
@@ -69,6 +73,19 @@ public:
             *item = itemsR[itemNum-1];
 
         itemNum--;
+    }
+
+    bool remove(const T item) {
+        for (size_t i = 0; i < itemNum; i++)
+            if (itemsW[i] == item) {
+                itemNum--;
+                for (size_t j = i; j < itemNum; j++)
+                    itemsW[j] = itemsW[j+1];
+
+                return true;
+            }
+
+        return false;
     }
 
 private:
