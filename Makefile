@@ -7,7 +7,7 @@ CXX = g++
 ifdef DEBUG
 CXXFLAGS = -Wall -g -ggdb
 else
-CXXFLAGS = -Wall -O3 -DMULTI_PROC=1 -fopenmp
+CXXFLAGS = -Wall -O3 #-DMULTI_PROC=1 -fopenmp
 LDLIBS = -lgomp
 endif
 

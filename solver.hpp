@@ -181,7 +181,7 @@ private:
         size_t filled;
 
         while ((filled = flooder.findNextField())) {
-            if ((filled % 5) != 0)
+            if ((filled % 6) != 0)
                 return false;
         }
 
